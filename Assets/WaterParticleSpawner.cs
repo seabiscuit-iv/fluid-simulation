@@ -14,16 +14,22 @@ public class WaterParticleSpawner : MonoBehaviour
         StartCoroutine(spawn());
     }
 
+    int count = 0;
+
     private IEnumerator spawn() {
         while(true) {
             for(float i = -((float)xAmt/2); i < (float)xAmt / 2; i++) {
                 for(float j = -((float)yAmt/2); j < (float)yAmt/2; j++) {
-                    Instantiate(waterParticle, transform.position + new Vector3(i/20, j/20, 0), Quaternion.identity);
+
+                    float noise = Mathf.PerlinNoise(i/2.5f * 1.128392f * (count + 4) , j/5);
+
+                    Instantiate(waterParticle, transform.position + new Vector3(i/2.5f + noise, j/5, 0), Quaternion.identity);
                 }
             }
 
             yield return new WaitForSeconds(0.1f);        
             
+            count++;
         }
     }
 }

@@ -443,9 +443,11 @@ MonoBehaviour:
   separationStrength: 2
   separationDistance: 0.1
   viscosity: 0.15
+  viscocityInterpolation: 1
   vorticityStrength: 0.2
   noiseScale: 0.1
   noiseStrength: 0.1
+  shearStrength: 0.5
 --- !u!4 &993093163
 Transform:
   m_ObjectHideFlags: 0

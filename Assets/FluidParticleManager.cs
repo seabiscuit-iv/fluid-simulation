@@ -17,11 +17,14 @@ public class FluidParticleManager : MonoBehaviour
     public float separationDistance = 0.5f;
 
     public float viscosity = 0.5f;
+    public bool viscocityInterpolation = true;
 
     public float vorticityStrength = 0.4f;
 
     public float noiseScale = 0.1f;
     public float noiseStrength = 0.5f;
+
+    public float shearStrength = 0.2f;
 
     public void ForceAdd(GameObject obj, int max) {
         if (waterParticles.Count >= max) {
@@ -51,6 +54,7 @@ public class FluidParticleManager : MonoBehaviour
         CohesionSeparationForces();
         Viscosity();
         VorticityConfinement();
+        ShearForces();
     }
 
     
@@ -113,8 +117,13 @@ public class FluidParticleManager : MonoBehaviour
                 var rb = particle.GetComponent<Rigidbody>();
                 Vector3 particleVelocity = rb.velocity;
 
-                //Mix
-                rb.velocity = Vector3.Lerp(particleVelocity, avgVelocity, viscosity);
+                if (viscocityInterpolation) {
+                    //Mix
+                    rb.velocity = Vector3.Lerp(particleVelocity, avgVelocity, viscosity);
+                } else {
+                    Vector3 viscosityForce = (avgVelocity - rb.velocity) * viscosity;
+                    rb.AddForce(viscosityForce);
+                }
                 //Viscocity Blend
                 // Vector3 velocityDifference = avgVelocity - rb.velocity;
                 // rb.velocity += velocityDifference * viscosity;
@@ -146,7 +155,7 @@ public class FluidParticleManager : MonoBehaviour
 
 
     // Not that great tbh
-    void ApplyNoiseForce() {
+    void VelocityNoise() {
         foreach (List<GameObject> chunk in neighbors.Values) {
             foreach (GameObject particle in chunk) {
                 Rigidbody rb = particle.GetComponent<Rigidbody>();
@@ -155,6 +164,35 @@ public class FluidParticleManager : MonoBehaviour
                 float noise_3 = Mathf.PerlinNoise(particle.transform.position.x * noiseScale + 11.11f, particle.transform.position.y * noiseScale + 234.6532f);
                 Vector3 noiseForce = new Vector3(noise_1, noise_2, noise_3).normalized * noiseStrength;
                 rb.AddForce(noiseForce);
+            }
+        }
+    }
+
+
+    void ShearForces() {
+        foreach (List<GameObject> chunk in neighbors.Values) {
+            foreach (GameObject particle in chunk) {
+                Vector3 shearForce = new();
+                Rigidbody rb = particle.GetComponent<Rigidbody>();
+
+                int count = 0;
+                foreach (GameObject other in chunk) {
+                    if (particle == other) {
+                        continue;
+                    }
+
+                    Rigidbody otherRb = other.GetComponent<Rigidbody>();
+                    
+                    Vector3 velocityDiff = otherRb.velocity - rb.velocity;
+                    Vector3 perpendicularForce = Vector3.Cross(velocityDiff, Vector3.up);
+                    shearForce += perpendicularForce;
+                    count++;
+                }
+
+                if (count != 0) {
+                    shearForce /= count;
+                    rb.AddForce(shearForce * shearStrength);       
+                }
             }
         }
     }

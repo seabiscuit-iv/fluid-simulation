@@ -18,6 +18,11 @@ public class FluidParticleManager : MonoBehaviour
 
     public float viscosity = 0.5f;
 
+    public float vorticityStrength = 0.4f;
+
+    public float noiseScale = 0.1f;
+    public float noiseStrength = 0.5f;
+
     public void ForceAdd(GameObject obj, int max) {
         if (waterParticles.Count >= max) {
             int numToRemove = waterParticles.Count - (max-1);
@@ -45,6 +50,7 @@ public class FluidParticleManager : MonoBehaviour
 
         CohesionSeparationForces();
         Viscosity();
+        VorticityConfinement();
     }
 
     
@@ -116,4 +122,40 @@ public class FluidParticleManager : MonoBehaviour
         }
     }
 
+    
+    void VorticityConfinement() {
+        foreach (List<GameObject> chunk in neighbors.Values) {
+            foreach (GameObject particle in chunk) {
+                Vector3 curl = new();
+                Rigidbody rb = particle.GetComponent<Rigidbody>();
+
+                foreach (GameObject other in chunk) {
+                    if (particle == other) {
+                        continue;
+                    }
+
+                    Rigidbody otherRb = other.GetComponent<Rigidbody>();
+                    curl += Vector3.Cross(otherRb.velocity - rb.velocity, other.transform.position - particle.transform.position);
+                }
+
+                Vector3 confinementForce = curl.normalized * vorticityStrength;
+                rb.AddForce(confinementForce);
+            }
+        }
+    }
+
+
+    // Not that great tbh
+    void ApplyNoiseForce() {
+        foreach (List<GameObject> chunk in neighbors.Values) {
+            foreach (GameObject particle in chunk) {
+                Rigidbody rb = particle.GetComponent<Rigidbody>();
+                float noise_1 = Mathf.PerlinNoise(particle.transform.position.x * noiseScale + 23.53f, particle.transform.position.y * noiseScale + 21.67f);
+                float noise_2 = Mathf.PerlinNoise(particle.transform.position.x * noiseScale + 13.854f, particle.transform.position.y * noiseScale + 11.63f);
+                float noise_3 = Mathf.PerlinNoise(particle.transform.position.x * noiseScale + 11.11f, particle.transform.position.y * noiseScale + 234.6532f);
+                Vector3 noiseForce = new Vector3(noise_1, noise_2, noise_3).normalized * noiseStrength;
+                rb.AddForce(noiseForce);
+            }
+        }
+    }
 }

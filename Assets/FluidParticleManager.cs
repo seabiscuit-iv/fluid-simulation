@@ -41,7 +41,7 @@ public class FluidParticleManager : MonoBehaviour
             max = Math.Max(obj.Count(), max);
         }
 
-        Debug.Log("Max: " + max);
+        // Debug.Log("Max: " + max);
 
         CohesionSeparationForces();
         Viscosity();
@@ -98,7 +98,7 @@ public class FluidParticleManager : MonoBehaviour
             Vector3 avgVelocity = new();
             int count = 0;
             foreach (GameObject particle in chunk) {
-                avgVelocity += particle.transform.position;
+                avgVelocity += particle.GetComponent<Rigidbody>().velocity;
                 count++;
             }
             avgVelocity /= count;
@@ -108,7 +108,7 @@ public class FluidParticleManager : MonoBehaviour
                 Vector3 particleVelocity = rb.velocity;
 
                 //Mix
-                rb.velocity = Vector3.Lerp(avgVelocity, particleVelocity, viscosity);
+                rb.velocity = Vector3.Lerp(particleVelocity, avgVelocity, viscosity);
                 //Viscocity Blend
                 // Vector3 velocityDifference = avgVelocity - rb.velocity;
                 // rb.velocity += velocityDifference * viscosity;
